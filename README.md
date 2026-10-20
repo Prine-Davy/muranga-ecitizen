@@ -2,19 +2,32 @@
 
 A full-stack web application prototype built for the **Murang'a County Government**. This system allows citizens to submit service requests, report issues, and track their resolution status, while providing county administrators with an intuitive dashboard to manage, update, and resolve these cases.
 
-## 🔗 Live Links & Submission
+## Live Links & Submission
 
 * **Live Application (Render):** https://muranga-ecitizen.onrender.com/
-* **GitHub Repository:** [github.com/Prine-Davy/muranga-ecitizen](https://github.com/Prine-Davy/muranga-ecitizen)
+* **GitHub Repository:** https://github.com/Prine-Davy/muranga-ecitizen
 
-## 🔐 Test Credentials for Evaluation
+## Test Credentials for Evaluation
 
 * **Admin Dashboard Access:**
+
   * **Email:** `admin@muranga.go.ke`
   * **Password:** `Admin@12345`
-  * *(Note: For ease of testing, the Admin OTP is displayed on the screen in demo mode).*
-* **Citizen Portal Access:**
-  * Please register a new account using your own email address. You will receive a **real 6-digit OTP code** via Gmail to verify your account.
+  * *(Note: For ease of testing, the Admin OTP is displayed on the screen in a green demo box).*
+  * *(Master Bypass: If the OTP screen is delayed, you can use the demo code `123456` to log in instantly).*
+* **Citizen Portal Access (Login):**
+
+  * Please log in with a registered account.
+  * *(Note: The Citizen OTP is also displayed on the screen in a green demo box).*
+  * *(Master Bypass: If the OTP screen is delayed, you can use the demo code `123456` to log in instantly).*
+* **Citizen Registration (New Accounts):**
+
+  * Please register a new account using any email address.
+  * *(Note: The Registration OTP is also displayed on the screen in a green demo box).*
+  * *(Master Bypass: If the OTP screen is delayed, you can use the demo code `123456` to verify instantly).*
+* **Password Reset:**
+
+  * *(Note: For ease of testing, the password reset link is automatically displayed directly on the screen in a green box instead of being emailed).*
 
 ## Core Features
 
@@ -30,7 +43,7 @@ A full-stack web application prototype built for the **Murang'a County Governmen
 * **Full Localization (English / Swahili):** A custom JavaScript i18n dictionary allows users to switch languages instantly without reloading the page.
 * **Accessibility Toolbar:** Built-in features for visual impairments, including High Contrast Mode, Text Resizing, and a Dyslexia-Friendly Font.
 * **Dynamic Backgrounds:** The landing and citizen dashboards rotate through a set of localized images, with a graceful fallback to the official Murang'a County green if images fail to load.
-* **Secure Password Reset:** Token-based password reset flow sent directly via email.
+* **Secure Password Reset:** Token-based password reset flow sent directly via email (or displayed on screen in demo mode).
 * **Help & Support Widget:** A floating support card with contact information.
 
 ## Tech Stack
@@ -46,6 +59,6 @@ To run this project locally on your machine, follow these steps:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/Prine-Davy/muranga-ecitizen
+   git clone https://github.com/Prine-Davy/muranga-ecitizen.git
    cd muranga-ecitizen
    ```

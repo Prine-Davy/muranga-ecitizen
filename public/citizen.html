@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2E7D32">
+  <title>My Dashboard | MCitizen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="citizen.html" class="logo" aria-label="MCitizen dashboard">
+        <!-- LOGO WITH FALLBACK -->
+        <img src="muranga-logo.png" alt="Murang'a County Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <span class="logo-mark" style="display: none;">M</span>
+        
+        <span class="logo-text">MCitizen<small>Murang'a County</small></span>
+      </a>
+      <nav class="nav-links" style="display:flex;position:static;background:none;padding:0;box-shadow:none;flex-direction:row;">
+        <button type="button" class="btn btn-outline btn-sm" id="logoutBtn" data-i18n="Logout">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <div class="container">
+
+      <!-- Profile card -->
+      <section class="profile-card" aria-label="Your profile">
+        <div class="avatar" id="avatar" aria-hidden="true">--</div>
+        <div class="profile-info">
+          <div class="profile-name">
+            <h2 id="userName">Loading...</h2>
+            <span class="badge badge-green" data-i18n="Citizen">Citizen</span>
+          </div>
+          <div class="profile-meta">
+            <span class="location-chip">&#128205; <span id="userConstituency">-</span> <span data-i18n="Constituency">Constituency</span></span>
+            <span class="location-chip">&#127968; <span id="userWard">-</span> <span data-i18n="Ward">Ward</span></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hero + search -->
+      <section class="dash-hero random-bg">
+        <h1 data-i18n="All county public services simplified">All county public services simplified</h1>
+        <p data-i18n="Pick a service category below to report an issue or make a request.">Pick a service category below to report an issue or make a request.</p>
+        <form class="search-bar" id="searchForm" role="search">
+          <input type="text" id="searchInput" data-i18n-placeholder="Search services, e.g. roads, permits, bursary" placeholder="Search services, e.g. roads, permits, bursary" aria-label="Search services" autocomplete="off">
+          <button type="submit" class="btn btn-gold btn-sm" data-i18n="Search">Search</button>
+        </form>
+      </section>
+
+      <!-- Categories -->
+      <div class="section-heading">
+        <h2 data-i18n="Service categories">Service categories</h2>
+      </div>
+      <section class="category-grid" id="categoryGrid" aria-label="Service categories"></section>
+      <div class="empty-state hidden" id="noResults" data-i18n="No services match your search. Try another word.">No services match your search. Try another word.</div>
+
+      <!-- My requests -->
+      <div class="section-heading">
+        <h2 data-i18n="My requests">My requests</h2>
+        <a href="submit-request.html" class="btn btn-primary btn-sm" data-i18n="+ New request">+ New request</a>
+      </div>
+      <section class="request-list" id="requestList" aria-live="polite">
+        <div class="loader" data-i18n="Loading your requests...">Loading your requests...</div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    // ---------- Auth guard ----------
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token || role !== 'citizen') {
+      window.location.replace(role === 'admin' && token ? 'admin.html' : 'login.html');
+    }
+
+    function logout() {
+      ['role', 'name', 'constituency', 'ward', 'userId', 'token'].forEach((k) => localStorage.removeItem(k));
+      window.location.href = 'login.html';
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // ---------- Data ----------
+    const issuesData = {
+      "Business & Trade": ["Single Business Permits (SBP)", "Noise Pollution", "Public Markets", "Illegal Hawking"],
+      "Land & Building Control": ["Unapproved Constructions", "Encroachment", "Drainage Planning", "Land Disputes"],
+      "Healthcare & Public Safety": ["Hospital Shortages", "Food Hygiene", "Stray Animals", "Noise and Air Pollution"],
+      "Transport & Infrastructure": ["Damaged Feeder Roads", "Blocked Culverts", "Matatu Stages"],
+      "Education & Social Services": ["ECDE Facilities", "Youth Polytechnics", "Bursary Distribution"],
+      "Integrity & Corruption": ["Enforcement Misconduct (Kanjo)", "Service Delays by County Staff"]
+    };
+
+    // UPDATED: Pointing to the image files
+    const categoryMeta = {
+      "Business & Trade": { icon: "icon-biz.png", text: "Permits, markets and trade" },
+      "Land & Building Control": { icon: "icon-land.png", text: "Construction and land issues" },
+      "Healthcare & Public Safety": { icon: "icon-health.png", text: "Health, hygiene and safety" },
+      "Transport & Infrastructure": { icon: "icon-transport.png", text: "Roads, culverts and stages" },
+      "Education & Social Services": { icon: "icon-edu.png", text: "ECDE, polytechnics, bursaries" },
+      "Integrity & Corruption": { icon: "icon-integrity.png", text: "Report misconduct and delays" }
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    // ---------- Profile ----------
+    const name = localStorage.getItem('name') || 'Citizen';
+    $('userName').textContent = name;
+    $('userConstituency').textContent = localStorage.getItem('constituency') || '-';
+    $('userWard').textContent = localStorage.getItem('ward') || '-';
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join('');
+    $('avatar').textContent = initials || 'C';
+
+    // ---------- Category cards ----------
+    const grid = $('categoryGrid');
+    const cards = [];
+
+    Object.keys(issuesData).forEach((cat) => {
+      const meta = categoryMeta[cat];
+      const a = document.createElement('a');
+      a.className = 'category-card';
+      a.href = 'submit-request.html?category=' + encodeURIComponent(cat);
+
+      // Create an image element inside the icon box
+      const iconContainer = document.createElement('div');
+      iconContainer.className = 'cat-icon';
+      
+      const img = document.createElement('img');
+      img.src = meta.icon;
+      img.alt = cat + " icon";
+      img.style.width = '45px';
+      img.style.height = '45px';
+      img.style.objectFit = 'contain';
+      
+      iconContainer.appendChild(img);
+      
+      const h3 = document.createElement('h3');
+      h3.textContent = cat;
+
+      const p = document.createElement('p');
+      p.textContent = meta.text;
+
+      a.append(iconContainer, h3, p);
+      grid.appendChild(a);
+      cards.push({ el: a, haystack: (cat + ' ' + meta.text + ' ' + issuesData[cat].join(' ')).toLowerCase() });
+    });
+
+    // ---------- Search ----------
+    function filterCards() {
+      const q = $('searchInput').value.trim().toLowerCase();
+      let visible = 0;
+      cards.forEach((c) => {
+        const show = !q || c.haystack.includes(q);
+        c.el.classList.toggle('hidden', !show);
+        if (show) visible++;
+      });
+      $('noResults').classList.toggle('hidden', visible > 0);
+    }
+    $('searchInput').addEventListener('input', filterCards);
+    $('searchForm').addEventListener('submit', (e) => { e.preventDefault(); filterCards(); });
+
+    // ---------- My requests ----------
+    function statusClass(status) {
+      return status === 'Resolved' ? 'resolved' : status === 'In Progress' ? 'in-progress' : 'pending';
+    }
+    function itemClass(status) {
+      return status === 'Resolved' ? 's-resolved' : status === 'In Progress' ? 's-progress' : 's-pending';
+    }
+    function formatDate(s) {
+      if (!s) return '';
+      const d = new Date(String(s).replace(' ', 'T') + 'Z');
+      return isNaN(d) ? s : d.toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    async function loadRequests() {
+      const list = $('requestList');
+      try {
+        const res = await fetch('/api/my-requests', { headers: { 'x-auth-token': token } });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+        list.innerHTML = '';
+
+        if (!data.success || !data.requests.length) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = 'You have not submitted any requests yet. Choose a category above to get started.';
+          list.appendChild(empty);
+          return;
+        }
+
+        data.requests.forEach((r) => {
+          const item = document.createElement('article');
+          item.className = 'request-item ' + itemClass(r.status);
+
+          const top = document.createElement('div');
+          top.style.cssText = 'display:flex;justify-content:space-between;gap:.75rem;align-items:flex-start;flex-wrap:wrap';
+          const title = document.createElement('h4');
+          title.textContent = r.sub_category;
+          const pill = document.createElement('span');
+          pill.className = 'status-pill ' + statusClass(r.status);
+          pill.textContent = r.status;
+          top.append(title, pill);
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          meta.textContent = r.category + ' \u2022 ' + r.ward + ', ' + r.constituency + ' \u2022 ' + formatDate(r.created_at) + ' \u2022 Ref #' + r.id;
+
+          const desc = document.createElement('p');
+          desc.className = 'text-muted';
+          desc.style.cssText = 'margin:.5rem 0 0;font-size:.9rem';
+          desc.textContent = r.description.length > 140 ? r.description.slice(0, 140) + '...' : r.description;
+
+          item.append(top, meta, desc);
+          list.appendChild(item);
+        });
+      } catch (err) {
+        list.innerHTML = '';
+        const e = document.createElement('div');
+        e.className = 'alert alert-error';
+        e.textContent = 'Could not load your requests. Please refresh the page.';
+        list.appendChild(e);
+      }
+    }
+    loadRequests();
+
+    // ---------- Success toast after submitting a request ----------
+    if (sessionStorage.getItem('requestSubmitted')) {
+      sessionStorage.removeItem('requestSubmitted');
+      const t = document.createElement('div');
+      t.className = 'toast success';
+      t.textContent = 'Your request was submitted successfully.';
+      $('toasts').appendChild(t);
+      setTimeout(() => t.remove(), 4500);
+    }
+  </script>
+  
+  <!-- ========================================== -->
+  <!-- RANDOM HERO BACKGROUND          -->
+  <!-- ========================================== -->
+  <script>
+    (function() {
+        const images = [
+            'hero1.jpg',
+            'hero2.jpg',
+            'hero3.jpg',
+            'hero4.jpg',
+            'hero5.jpg',
+            'hero6.jpg'
+        ];
+
+        const randomImage = images[Math.floor(Math.random() * images.length)];
+        const bgElements = document.querySelectorAll('.random-bg');
+        
+        bgElements.forEach(el => {
+            el.style.backgroundImage = `
+                linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), 
+                url('${randomImage}')
+            `;
+        });
+    })();
+  </script>
+
+  <script src="shared.js"></script>
+</body>
+</html>

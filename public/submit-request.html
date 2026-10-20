@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2E7D32">
+  <title>Submit a Request | MCitizen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="citizen.html" class="logo" aria-label="MCitizen dashboard">
+        <!-- LOGO WITH FALLBACK -->
+        <img src="muranga-logo.png" alt="Murang'a County Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <span class="logo-mark" style="display: none;">M</span>
+        
+        <span class="logo-text">MCitizen<small>Murang'a County</small></span>
+      </a>
+      <nav class="nav-links" style="display:flex;position:static;background:none;padding:0;box-shadow:none;flex-direction:row;">
+        <button type="button" class="btn btn-outline btn-sm" id="logoutBtn" data-i18n="Logout">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="breadcrumb"><a href="citizen.html" data-i18n="&larr; Back to dashboard">&larr; Back to dashboard</a></div>
+
+    <div class="page-card-wrap">
+      <div class="page-card">
+        <h1 data-i18n="Submit a service request">Submit a service request</h1>
+        <p class="lead" data-i18n="Tell us what is wrong and where. The relevant county office will review it.">Tell us what is wrong and where. The relevant county office will review it.</p>
+
+        <div id="alertBox" class="alert alert-error hidden" role="alert"></div>
+
+        <form id="requestForm" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="category" data-i18n="Category">Category <span class="req">*</span></label>
+              <select id="category" name="category" required>
+                <option value="" data-i18n="Select category">Select category</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sub_category" data-i18n="Sub-category">Sub-category <span class="req">*</span></label>
+              <select id="sub_category" name="sub_category" required disabled>
+                <option value="" data-i18n="Select category first">Select category first</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="constituency" data-i18n="Constituency">Constituency <span class="req">*</span></label>
+              <select id="constituency" name="constituency" required>
+                <option value="" data-i18n="Select constituency">Select constituency</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="ward" data-i18n="Ward">Ward <span class="req">*</span></label>
+              <select id="ward" name="ward" required disabled>
+                <option value="" data-i18n="Select constituency first">Select constituency first</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="location_details" data-i18n="Specific Location / Landmark">Specific Location / Landmark <span class="req">*</span></label>
+            <input type="text" id="location_details" name="location_details" maxlength="100" placeholder="e.g., Near Kiharu Stadium, off the main road" required data-i18n-placeholder="e.g., Near Kiharu Stadium, off the main road">
+            <div class="form-hint" data-i18n="Help our teams find the exact spot.">Help our teams find the exact spot.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="description" data-i18n="Description">Description <span class="req">*</span></label>
+            <textarea id="description" name="description" maxlength="1000" placeholder="Describe the issue in detail..." required data-i18n-placeholder="Describe the issue in detail..."></textarea>
+            <div class="form-hint"><span id="charCount">0</span>/1000 <span data-i18n="characters (minimum 10)">characters (minimum 10)</span></div>
+          </div>
+
+          <div class="form-group">
+            <label for="image" data-i18n="Photo evidence (optional)">Photo evidence (optional)</label>
+            <label class="file-drop" id="fileDrop" for="image">
+              <input type="file" id="image" name="image" accept="image/png,image/jpeg,image/gif,image/webp">
+              <span id="fileLabel"><strong data-i18n="Tap to upload">Tap to upload</strong> <span data-i18n="or drag a photo here">or drag a photo here</span><br><small data-i18n="JPG, PNG, GIF or WEBP, up to 5MB">JPG, PNG, GIF or WEBP, up to 5MB</small></span>
+            </label>
+            <img id="preview" class="image-preview hidden" alt="Selected photo preview">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="submitBtn" data-i18n="Submit request">Submit request</button>
+        </form>
+
+        <!-- Success panel -->
+        <div class="success-panel hidden" id="successPanel">
+          <div class="success-icon">&#10003;</div>
+          <h2 data-i18n="Request submitted">Request submitted</h2>
+          <p class="text-muted"><span data-i18n="Your reference number is">Your reference number is</span> <strong id="refNumber"></strong>. <span data-i18n="You can follow its progress on your dashboard.">You can follow its progress on your dashboard.</span></p>
+          <div style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap">
+            <a href="citizen.html" class="btn btn-primary" data-i18n="Go to dashboard">Go to dashboard</a>
+            <a href="submit-request.html" class="btn btn-outline" data-i18n="Submit another">Submit another</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ---------- Auth guard ----------
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token || role !== 'citizen') {
+      window.location.replace(role === 'admin' && token ? 'admin.html' : 'login.html');
+    }
+
+    function logout() {
+      ['role', 'name', 'constituency', 'ward', 'userId', 'token'].forEach((k) => localStorage.removeItem(k));
+      window.location.href = 'login.html';
+    }
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // ---------- Data ----------
+    const murangaLocations = {
+      "Gatanga": ["Ithanga", "Kakuzi/Mitubiri", "Mugumo-Ini", "Kihumbu-Ini", "Gatanga", "Kariara"],
+      "Kandara": ["Ng'araria", "Muruka", "Kagundu-Ini", "Gaichanjiru", "Ithiru", "Ruchu"],
+      "Kangema": ["Kanyenya-Ini", "Muguru", "Rwathia"],
+      "Kigumo": ["Kahumbu", "Muthithi", "Kigumo", "Kangari", "Kinyona"],
+      "Kiharu": ["Wangu", "Mugoiri", "Mbiri", "Township", "Murarandia", "Gaturi"],
+      "Maragua": ["Kimorori/Wempa", "Makuyu", "Kambiti", "Kamahuha", "Ichagaki", "Nginda"],
+      "Mathioya": ["Gitugi", "Kiru", "Kamacharia"]
+    };
+
+    const issuesData = {
+      "Business & Trade": ["Single Business Permits (SBP)", "Noise Pollution", "Public Markets", "Illegal Hawking"],
+      "Land & Building Control": ["Unapproved Constructions", "Encroachment", "Drainage Planning", "Land Disputes"],
+      "Healthcare & Public Safety": ["Hospital Shortages", "Food Hygiene", "Stray Animals", "Noise and Air Pollution"],
+      "Transport & Infrastructure": ["Damaged Feeder Roads", "Blocked Culverts", "Matatu Stages"],
+      "Education & Social Services": ["ECDE Facilities", "Youth Polytechnics", "Bursary Distribution"],
+      "Integrity & Corruption": ["Enforcement Misconduct (Kanjo)", "Service Delays by County Staff"],
+      "Other": ["General Inquiry / Other Issue"]
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const categorySel = $('category');
+    const subSel = $('sub_category');
+    const constSel = $('constituency');
+    const wardSel = $('ward');
+
+    // ---------- Generic dependent-dropdown helper ----------
+    function fillChild(parentValue, dataMap, childSel, placeholder, emptyText) {
+      childSel.innerHTML = '';
+      const items = dataMap[parentValue];
+      if (!items) {
+        childSel.add(new Option(t(emptyText), ''));
+        childSel.disabled = true;
+        return;
+      }
+      childSel.add(new Option(t(placeholder), ''));
+      items.forEach((i) => childSel.add(new Option(i, i)));
+      childSel.disabled = false;
+    }
+
+    // Use window.t from shared.js to translate dynamically generated text
+    Object.keys(issuesData).forEach((c) => categorySel.add(new Option(c, c)));
+    Object.keys(murangaLocations).forEach((c) => constSel.add(new Option(c, c)));
+
+    categorySel.addEventListener('change', () => {
+      fillChild(categorySel.value, issuesData, subSel, 'Select sub-category', 'Select category first');
+      if (categorySel.value === 'Other') {
+        setTimeout(() => { $('location_details').focus(); }, 100);
+      }
+    });
+
+    constSel.addEventListener('change', () =>
+      fillChild(constSel.value, murangaLocations, wardSel, 'Select ward', 'Select constituency first'));
+
+    // ---------- Pre-fill ----------
+    const preCat = new URLSearchParams(window.location.search).get('category');
+    if (preCat && issuesData[preCat]) {
+      categorySel.value = preCat;
+      categorySel.dispatchEvent(new Event('change'));
+    }
+    
+    const myConst = localStorage.getItem('constituency');
+    const myWard = localStorage.getItem('ward');
+    if (myConst && murangaLocations[myConst]) {
+      constSel.value = myConst;
+      constSel.dispatchEvent(new Event('change'));
+      if (myWard && murangaLocations[myConst].includes(myWard)) wardSel.value = myWard;
+    }
+
+    // ---------- Description counter ----------
+    $('description').addEventListener('input', function () {
+      $('charCount').textContent = this.value.length;
+    });
+
+    // ---------- Image picker + preview ----------
+    const imageInput = $('image');
+    const preview = $('preview');
+    const fileDrop = $('fileDrop');
+    const MAX_BYTES = 5 * 1024 * 1024;
+    const ALLOWED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    function showAlert(msg, type) {
+      const box = $('alertBox');
+      box.textContent = msg;
+      box.className = 'alert alert-' + (type || 'error');
+      box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function hideAlert() { $('alertBox').className = 'alert alert-error hidden'; }
+
+    function resetImage() {
+      imageInput.value = '';
+      preview.classList.add('hidden');
+      preview.removeAttribute('src');
+      $('fileLabel').innerHTML = `<strong>${t('Tap to upload')}</strong> ${t('or drag a photo here')}<br><small>${t('JPG, PNG, GIF or WEBP, up to 5MB')}</small>`;
+    }
+
+    function handleFile(file) {
+      if (!file) { resetImage(); return; }
+      if (!ALLOWED.includes(file.type)) { showAlert(t('Please choose a JPG, PNG, GIF or WEBP image.')); resetImage(); return; }
+      if (file.size > MAX_BYTES) { showAlert(t('That image is larger than 5MB. Please choose a smaller one.')); resetImage(); return; }
+      hideAlert();
+      const reader = new FileReader();
+      reader.onload = (e) => { preview.src = e.target.result; preview.classList.remove('hidden'); };
+      reader.readAsDataURL(file);
+      $('fileLabel').textContent = file.name;
+    }
+
+    imageInput.addEventListener('change', () => handleFile(imageInput.files[0]));
+    ['dragenter', 'dragover'].forEach((ev) =>
+      fileDrop.addEventListener(ev, (e) => { e.preventDefault(); fileDrop.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach((ev) =>
+      fileDrop.addEventListener(ev, (e) => { e.preventDefault(); fileDrop.classList.remove('dragover'); }));
+    fileDrop.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length) {
+        imageInput.files = e.dataTransfer.files;
+        handleFile(imageInput.files[0]);
+      }
+    });
+
+    // ---------- Submit ----------
+    $('requestForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const description = $('description').value.trim();
+      const locationDetails = $('location_details').value.trim();
+
+      if (!categorySel.value || !subSel.value) { showAlert(t('Please select a category and sub-category.')); return; }
+      if (!constSel.value || !wardSel.value) { showAlert(t('Please select your constituency and ward.')); return; }
+      if (locationDetails.length < 3) { showAlert(t('Please provide a specific location or landmark.')); return; }
+      if (description.length < 10) { showAlert(t('Please describe the issue in at least 10 characters.')); return; }
+
+      const btn = $('submitBtn');
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      const fd = new FormData();
+      fd.append('category', categorySel.value);
+      fd.append('sub_category', subSel.value);
+      fd.append('constituency', constSel.value);
+      fd.append('ward', wardSel.value);
+      fd.append('location_details', locationDetails);
+      fd.append('description', description);
+      if (imageInput.files[0]) fd.append('image', imageInput.files[0]);
+
+      try {
+        const res = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'x-auth-token': token },
+          body: fd
+        });
+        if (res.status === 401) { logout(); return; }
+        const data = await res.json();
+
+        if (data.success) {
+          $('requestForm').classList.add('hidden');
+          $('refNumber').textContent = '#' + data.requestId;
+          $('successPanel').classList.remove('hidden');
+          sessionStorage.setItem('requestSubmitted', '1');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          showAlert(data.message || t('Could not submit your request. Please try again.'));
+        }
+      } catch (err) {
+        showAlert(t('Could not reach the server. Check your connection and try again.'));
+      } finally {
+        btn.classList.remove('loading');
+        btn.disabled = false;
+      }
+    });
+  </script>
+  
+  <script src="shared.js"></script>
+</body>
+</html>

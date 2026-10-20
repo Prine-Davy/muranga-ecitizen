@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2E7D32">
+  <title>Login | MCitizen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="logo" aria-label="MCitizen home">
+        <!-- NAVBAR LOGO WITH FALLBACK -->
+        <img src="muranga-logo.png" alt="Murang'a County Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <span class="logo-mark" style="display: none;">M</span>
+        
+        <span class="logo-text">MCitizen<small>Murang'a County</small></span>
+      </a>
+      <nav class="nav-links" style="display:flex;position:static;background:none;padding:0;box-shadow:none;flex-direction:row;">
+        <a href="register.html" class="btn btn-gold btn-sm" data-i18n="Create account">Create account</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- bg-login CLASS APPLIES THE BACKGROUND IMAGE -->
+  <main class="auth-wrapper bg-login">
+    <div class="auth-card">
+
+      <div class="auth-header">
+        <!-- FORM LOGO WITH FALLBACK -->
+        <img src="muranga-logo.png" alt="Murang'a County Logo" class="auth-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="logo-mark" style="display: none; margin: 0 auto 15px auto;">M</div>
+        
+        <h1 id="pageTitle" data-i18n="Welcome back">Welcome back</h1>
+        <p id="pageSubtitle" data-i18n="Log in to access Murang'a County services.">Log in to access Murang'a County services.</p>
+      </div>
+
+      <div id="alertBox" class="alert alert-error hidden" role="alert"></div>
+
+      <!-- STEP 1: Credentials -->
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="identifier" data-i18n="Email address or ID number">Email address or ID number</label>
+          <input type="text" id="identifier" name="identifier" data-i18n-placeholder="Email address or ID number" placeholder="you@example.com or 12345678" autocomplete="username" autocapitalize="none" required>
+        </div>
+        <div class="form-group">
+          <label for="password" data-i18n="Password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="toggle-password" id="togglePw" aria-label="Show password">Show</button>
+          </div>
+        </div>
+        
+        <!-- FORGOT PASSWORD LINK -->
+        <div style="text-align: right; margin-bottom: 20px;">
+            <a href="/forgot-password.html" data-i18n="Forgot password?" style="color: #1976D2; font-size: 14px; text-decoration: none;">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn" data-i18n="Log in">Log in</button>
+        <p class="auth-footer">
+          <span data-i18n="New to MCitizen?">New to MCitizen?</span> 
+          <a href="register.html" data-i18n="Create an account">Create an account</a>
+        </p>
+      </form>
+
+      <!-- STEP 2: OTP -->
+      <form id="otpForm" class="hidden" novalidate>
+        <div class="alert alert-info" data-i18n="We sent a 6-digit verification code to your registered email address. It expires in 5 minutes.">We sent a 6-digit verification code to your registered email address. It expires in 5 minutes.</div>
+        
+        <!-- DEMO OTP BOX (Only appears for the Admin) -->
+        <div class="demo-otp hidden" id="demoOtp" style="background: #e8f5e9; padding: 10px; border-radius: 8px; border: 1px solid #2E7D32; margin-bottom: 15px; text-align: center;">
+          <span data-i18n="Demo mode: your code is">Demo mode: your code is</span> <strong id="demoOtpValue" style="color: #2E7D32; font-size: 18px;"></strong>
+        </div>
+
+        <div class="form-group">
+          <label for="otp" data-i18n="Verification code">Verification code</label>
+          <input type="text" id="otp" name="otp" class="otp-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="------" autocomplete="one-time-code" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="otpBtn" data-i18n="Verify & continue">Verify &amp; continue</button>
+        <div class="otp-timer" id="otpTimer"></div>
+        <div class="wizard-actions" style="margin-top:1rem">
+          <button type="button" class="btn btn-ghost btn-sm" id="backToLogin" data-i18n="Use a different account">Use a different account</button>
+          <button type="button" class="btn btn-outline btn-sm" id="resendBtn" data-i18n="Resend code">Resend code</button>
+        </div>
+      </form>
+
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const loginForm = $('loginForm');
+    const otpForm = $('otpForm');
+    const alertBox = $('alertBox');
+
+    let pendingUserId = null;
+    let timerInterval = null;
+
+    // ---------- Helpers ----------
+    function showAlert(msg, type) {
+      alertBox.textContent = msg;
+      alertBox.className = 'alert alert-' + (type || 'error');
+    }
+    function hideAlert() { alertBox.className = 'alert alert-error hidden'; }
+
+    function setLoading(btn, loading) {
+      btn.classList.toggle('loading', loading);
+      btn.disabled = loading;
+    }
+
+    async function postJSON(url, body) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      let data;
+      try { data = await res.json(); } catch (e) { data = { success: false, message: 'Unexpected server response.' }; }
+      return data;
+    }
+
+    // Show / hide password
+    $('togglePw').addEventListener('click', function () {
+      const input = $('password');
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      this.textContent = show ? 'Hide' : 'Show';
+      this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    });
+
+    // OTP countdown (5 minutes)
+    function startTimer() {
+      clearInterval(timerInterval);
+      let remaining = 5 * 60;
+      const el = $('otpTimer');
+      const tick = () => {
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          el.textContent = 'Code expired. Tap "Resend code" to get a new one.';
+          return;
+        }
+        const m = Math.floor(remaining / 60);
+        const s = String(remaining % 60).padStart(2, '0');
+        el.textContent = 'Code expires in ' + m + ':' + s;
+        remaining--;
+      };
+      tick();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function showOtpStep(data) {
+      pendingUserId = data.userId;
+      loginForm.classList.add('hidden');
+      otpForm.classList.remove('hidden');
+      
+      // Update text and trigger translation if Swahili is active
+      $('pageTitle').textContent = 'Verify it\u2019s you';
+      $('pageTitle').setAttribute('data-i18n', 'Verify it\u2019s you');
+      $('pageSubtitle').textContent = 'Enter the one-time code to finish logging in.';
+      $('pageSubtitle').setAttribute('data-i18n', 'Enter the one-time code to finish logging in.');
+      if (typeof translatePage === 'function') translatePage();
+
+      // Demo convenience: server ONLY returns this for Admin
+      if (data.demoOtp) {
+        $('demoOtpValue').textContent = data.demoOtp;
+        $('demoOtp').classList.remove('hidden');
+      } else {
+        $('demoOtp').classList.add('hidden');
+      }
+      
+      $('otp').value = '';
+      $('otp').focus();
+      startTimer();
+    }
+
+    function showLoginStep() {
+      clearInterval(timerInterval);
+      pendingUserId = null;
+      otpForm.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+      
+      // Update text and trigger translation if Swahili is active
+      $('pageTitle').textContent = 'Welcome back';
+      $('pageTitle').setAttribute('data-i18n', 'Welcome back');
+      $('pageSubtitle').textContent = 'Log in to access Murang\u2019a County services.';
+      $('pageSubtitle').setAttribute('data-i18n', 'Log in to access Murang\u2019a County services.');
+      if (typeof translatePage === 'function') translatePage();
+
+      $('password').value = '';
+      hideAlert();
+    }
+
+    // ---------- Step 1: password ----------
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const identifier = $('identifier').value.trim();
+      const password = $('password').value;
+      
+      if (!identifier || !password) {
+        showAlert('Please enter your email/ID number and password.');
+        return;
+      }
+
+      setLoading($('loginBtn'), true);
+      hideAlert();
+      
+      try {
+        const data = await postJSON('/api/login', { identifier, password });
+        if (data.success && data.requireOtp) {
+          showOtpStep(data);
+        } else {
+          showAlert(data.message || 'Login failed. Please try again.');
+        }
+      } catch (err) {
+        showAlert('Could not reach the server. Check your connection and try again.');
+      } finally {
+        setLoading($('loginBtn'), false);
+      }
+    });
+
+    // ---------- Step 2: OTP ----------
+    $('otp').addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '').slice(0, 6);
+    });
+
+    otpForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const otp = $('otp').value.trim();
+      if (!/^\d{6}$/.test(otp)) {
+        showAlert('Please enter the 6-digit code.');
+        return;
+      }
+      setLoading($('otpBtn'), true);
+      hideAlert();
+      try {
+        const data = await postJSON('/api/verify-otp', { userId: pendingUserId, otp });
+        if (data.success) {
+          localStorage.setItem('role', data.role);
+          localStorage.setItem('name', data.name);
+          localStorage.setItem('constituency', data.constituency || '');
+          localStorage.setItem('ward', data.ward || '');
+          localStorage.setItem('userId', data.userId);
+          localStorage.setItem('token', data.token);
+
+          showAlert('Login successful. Redirecting...', 'success');
+          setTimeout(() => {
+            window.location.href = data.role === 'admin' ? 'admin.html' : 'citizen.html';
+          }, 600);
+        } else {
+          showAlert(data.message || 'Verification failed. Please try again.');
+          setLoading($('otpBtn'), false);
+        }
+      } catch (err) {
+        showAlert('Could not reach the server. Check your connection and try again.');
+        setLoading($('otpBtn'), false);
+      }
+    });
+
+    $('backToLogin').addEventListener('click', showLoginStep);
+
+    // ---------- RESEND CODE (Uses the dedicated API route) ----------
+    $('resendBtn').addEventListener('click', async () => {
+      if (!pendingUserId) { showLoginStep(); return; }
+      
+      $('resendBtn').textContent = "Sending...";
+      $('resendBtn').disabled = true;
+
+      try {
+          const resendRes = await fetch('/api/resend-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: pendingUserId })
+          });
+          const resendData = await resendRes.json();
+
+          if (resendData.success) {
+              // If the server sent a demoOtp (Admin), update the box
+              if (resendData.demoOtp) {
+                  $('demoOtpValue').textContent = resendData.demoOtp;
+                  $('demoOtp').classList.remove('hidden');
+              } else {
+                  $('demoOtp').classList.add('hidden'); // Ensure hidden for citizens
+              }
+              showAlert('A new code has been sent to your email.', 'success');
+              startTimer(); // Reset timer
+          } else {
+              showAlert(resendData.message || "Failed to resend code.");
+          }
+      } catch (err) {
+          showAlert("Could not reach the server.");
+      } finally {
+          $('resendBtn').textContent = "Resend code";
+          $('resendBtn').disabled = false;
+      }
+    });
+  </script>
+  
+  <script src="shared.js"></script>
+</body>
+</html>

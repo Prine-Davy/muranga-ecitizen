@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2E7D32">
+  <title>Create Account | MCitizen</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="logo" aria-label="MCitizen home">
+        <!-- LOGO WITH FALLBACK -->
+        <img src="muranga-logo.png" alt="Murang'a County Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <span class="logo-mark" style="display: none;">M</span>
+        
+        <span class="logo-text">MCitizen<small>Murang'a County</small></span>
+      </a>
+      <nav class="nav-links" style="display:flex;position:static;background:none;padding:0;box-shadow:none;flex-direction:row;">
+        <a href="login.html" class="btn btn-outline btn-sm" data-i18n="Login">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- bg-register CLASS APPLIES THE BACKGROUND IMAGE -->
+  <main class="auth-wrapper bg-register">
+    <div class="auth-card" style="max-width:520px;">
+
+      <div class="auth-header" id="authHeader">
+        <h1 data-i18n="Create your account">Create your account</h1>
+        <p data-i18n="Register once to access Murang'a County services.">Register once to access Murang'a County services.</p>
+      </div>
+
+      <!-- Progress dots -->
+      <div class="progress-steps" id="progressSteps" aria-label="Registration progress">
+        <div class="progress-fill" id="progressFill"></div>
+        <div class="step-dot active" data-step="1"><span class="dot">1</span><span class="label" data-i18n="Identity">Identity</span></div>
+        <div class="step-dot" data-step="2"><span class="dot">2</span><span class="label" data-i18n="Location">Location</span></div>
+        <div class="step-dot" data-step="3"><span class="dot">3</span><span class="label" data-i18n="Security">Security</span></div>
+        <div class="step-dot" data-step="4"><span class="dot">4</span><span class="label" data-i18n="Complete">Complete</span></div>
+      </div>
+
+      <div id="formAlert" class="alert alert-error hidden" role="alert"></div>
+
+      <form id="registerForm" novalidate autocomplete="on">
+
+        <!-- STEP 1: Identity -->
+        <section class="form-step active" data-step="1">
+          <h3 data-i18n="Your identity">Your identity</h3>
+          <div class="form-group">
+            <label for="national_id" data-i18n="National ID number">National ID number <span class="req">*</span></label>
+            <input type="text" id="national_id" name="national_id" inputmode="numeric" maxlength="8" placeholder="e.g. 12345678" autocomplete="off">
+            <div class="form-error" id="err-national_id"></div>
+          </div>
+          <div class="form-group">
+            <label for="full_name" data-i18n="Full name">Full name <span class="req">*</span></label>
+            <input type="text" id="full_name" name="full_name" placeholder="As it appears on your ID" autocomplete="name">
+            <div class="form-hint">Enter your names exactly as they appear on your national ID.</div>
+            <div class="form-error" id="err-full_name"></div>
+          </div>
+        </section>
+
+        <!-- STEP 2: Location -->
+        <section class="form-step" data-step="2">
+          <h3 data-i18n="Where do you live?">Where do you live?</h3>
+          <div class="form-group">
+            <label for="constituency" data-i18n="Constituency">Constituency <span class="req">*</span></label>
+            <select id="constituency" name="constituency">
+              <option value="">Select constituency</option>
+            </select>
+            <div class="form-error" id="err-constituency"></div>
+          </div>
+          <div class="form-group">
+            <label for="ward" data-i18n="Ward">Ward <span class="req">*</span></label>
+            <select id="ward" name="ward" disabled>
+              <option value="">Select constituency first</option>
+            </select>
+            <div class="form-error" id="err-ward"></div>
+          </div>
+        </section>
+
+        <!-- STEP 3: Security -->
+        <section class="form-step" data-step="3">
+          <h3 data-i18n="Contact & security">Contact &amp; security</h3>
+          <div class="form-group">
+            <label for="email" data-i18n="Email address">Email address <span class="req">*</span></label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+            <div class="form-hint" data-i18n="Your one-time verification code is sent to this Email.">Your one-time verification code is sent to this Email.</div>
+            <div class="form-error" id="err-email"></div>
+          </div>
+          <div class="form-group">
+            <label for="phone" data-i18n="Phone number">Phone number <span class="req">*</span></label>
+            <input type="tel" id="phone" name="phone" placeholder="07XX XXX XXX" autocomplete="tel">
+            <div class="form-error" id="err-phone"></div>
+          </div>
+          <div class="form-group">
+            <label for="password" data-i18n="Password">Password <span class="req">*</span></label>
+            <div class="input-wrap">
+              <input type="password" id="password" name="password" placeholder="Create a strong password" autocomplete="new-password">
+              <button type="button" class="toggle-password" data-target="password" aria-label="Show password" data-i18n="Show">Show</button>
+            </div>
+            <div class="strength-bar" id="strengthBar"><span></span></div>
+            <ul class="password-rules" id="passwordRules">
+              <li data-rule="length">At least 8 characters</li>
+              <li data-rule="upper">One uppercase letter (A-Z)</li>
+              <li data-rule="lower">One lowercase letter (a-z)</li>
+              <li data-rule="number">One number (0-9)</li>
+              <li data-rule="special">One special character (e.g. @ # $ !)</li>
+            </ul>
+            <div class="form-error" id="err-password"></div>
+          </div>
+          <div class="form-group">
+            <label for="confirm_password" data-i18n="Confirm password">Confirm password <span class="req">*</span></label>
+            <div class="input-wrap">
+              <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your password" autocomplete="new-password">
+              <button type="button" class="toggle-password" data-target="confirm_password" aria-label="Show password" data-i18n="Show">Show</button>
+            </div>
+            <div class="form-error" id="err-confirm_password"></div>
+          </div>
+        </section>
+
+        <!-- STEP 4: Review & terms -->
+        <section class="form-step" data-step="4">
+          <h3 data-i18n="Review & confirm">Review &amp; confirm</h3>
+          <ul class="review-list" id="reviewList"></ul>
+          <div class="terms-box" tabindex="0" aria-label="Terms and conditions">
+            <strong data-i18n="Terms & Conditions">Terms &amp; Conditions</strong>
+            <p data-i18n="By creating an MCitizen account you confirm that the details provided are true and belong to you. Your information is used only to deliver County Government of Murang'a services and to contact you about your requests.">By creating an MCitizen account you confirm that the details provided are true and belong to you. Your information is used only to deliver County Government of Murang'a services and to contact you about your requests.</p>
+            <p data-i18n="You agree to submit genuine requests and to avoid abusive, false or malicious reports. Accounts used to misuse the service may be suspended. Keep your password and one-time codes private.">You agree to submit genuine requests and to avoid abusive, false or malicious reports. Accounts used to misuse the service may be suspended. Keep your password and one-time codes private.</p>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-row" for="terms">
+              <input type="checkbox" id="terms" name="terms">
+              <span data-i18n="I have read and agree to the Terms & Conditions.">I have read and agreed to the Terms &amp; Conditions.</span>
+            </label>
+            <div class="form-error" id="err-terms"></div>
+          </div>
+        </section>
+
+        <!-- Navigation buttons -->
+        <div class="wizard-actions" id="wizardActions">
+          <button type="button" class="btn btn-ghost hidden" id="backBtn" data-i18n="Back">Back</button>
+          <button type="button" class="btn btn-primary" id="nextBtn" data-i18n="Next">Next</button>
+          <button type="submit" class="btn btn-primary hidden" id="submitBtn" data-i18n="Create account">Create account</button>
+        </div>
+      </form>
+
+      <!-- OTP VERIFICATION SECTION -->
+      <div id="otpSection" style="display: none; text-align: center; padding: 20px 0;">
+        <div class="success-icon" style="margin-bottom: 20px; font-size: 40px; color: #2E7D32;">✉️</div>
+        <h2 style="margin-bottom: 10px;" data-i18n="Verify Your Account">Verify Your Account</h2>
+        <p class="text-muted" style="margin-bottom: 20px;" data-i18n="We have sent a 6-digit verification code to your email address. Please check your inbox.">We have sent a 6-digit verification code to your email address. Please check your inbox.</p>
+        
+        <div class="form-group">
+            <input type="text" id="otpInput" maxlength="6" placeholder="------" style="text-align: center; font-size: 24px; letter-spacing: 8px; padding: 15px; width: 100%; max-width: 300px; margin: 0 auto; border: 2px solid #ccc; border-radius: 8px;">
+        </div>
+        
+        <button type="button" id="verifyRegisterBtn" class="btn btn-primary" style="width: 100%; max-width: 300px; margin: 20px auto 0 auto; display: block; background: #2E7D32; color: white; padding: 15px; border-radius: 8px; font-weight: bold; border: none; cursor: pointer;" data-i18n="Verify & Log In">Verify & Log In</button>
+        
+        <div style="margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+            <button type="button" id="backToFormBtn" class="btn btn-outline btn-sm" style="background: transparent; border: 1px solid #2E7D32; color: #2E7D32; padding: 10px 20px; border-radius: 8px; cursor: pointer;" data-i18n="Back">Back</button>
+            <button type="button" id="resendOtpBtn" class="btn btn-outline btn-sm" style="background: transparent; border: 1px solid #ccc; color: #555; padding: 10px 20px; border-radius: 8px; cursor: pointer;" data-i18n="Resend Code">Resend Code</button>
+        </div>
+      </div>
+
+      <p class="auth-footer" id="authFooter">
+        <span data-i18n="Already registered?">Already registered?</span> 
+        <a href="login.html" data-i18n="Log in">Log in</a>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    const murangaLocations = {
+      "Gatanga": ["Ithanga", "Kakuzi/Mitubiri", "Mugumo-Ini", "Kihumbu-Ini", "Gatanga", "Kariara"],
+      "Kandara": ["Ng'araria", "Muruka", "Kagundu-Ini", "Gaichanjiru", "Ithiru", "Ruchu"],
+      "Kangema": ["Kanyenya-Ini", "Muguru", "Rwathia"],
+      "Kigumo": ["Kahumbu", "Muthithi", "Kigumo", "Kangari", "Kinyona"],
+      "Kiharu": ["Wangu", "Mugoiri", "Mbiri", "Township", "Murarandia", "Gaturi"],
+      "Maragua": ["Kimorori/Wempa", "Makuyu", "Kambiti", "Kamahuha", "Ichagaki", "Nginda"],
+      "Mathioya": ["Gitugi", "Kiru", "Kamacharia"]
+    };
+
+    const TOTAL_STEPS = 4;
+    let currentStep = 1;
+
+    const $ = (id) => document.getElementById(id);
+    const form = $('registerForm');
+    const steps = document.querySelectorAll('.form-step');
+    const dots = document.querySelectorAll('.step-dot');
+    const backBtn = $('backBtn');
+    const nextBtn = $('nextBtn');
+    const submitBtn = $('submitBtn');
+    const formAlert = $('formAlert');
+    const constituencySel = $('constituency');
+    const wardSel = $('ward');
+
+    Object.keys(murangaLocations).forEach((c) => {
+      constituencySel.add(new Option(c, c));
+    });
+
+    constituencySel.addEventListener('change', () => {
+      wardSel.innerHTML = '';
+      const wards = murangaLocations[constituencySel.value];
+      if (!wards) {
+        wardSel.add(new Option('Select constituency first', ''));
+        wardSel.disabled = true;
+        return;
+      }
+      wardSel.add(new Option('Select ward', ''));
+      wards.forEach((w) => wardSel.add(new Option(w, w)));
+      wardSel.disabled = false;
+      clearError('constituency');
+    });
+
+    document.querySelectorAll('.toggle-password').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = $(btn.dataset.target);
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.textContent = show ? 'Hide' : 'Show';
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+      });
+    });
+
+    const rules = {
+      length: (p) => p.length >= 8,
+      upper: (p) => /[A-Z]/.test(p),
+      lower: (p) => /[a-z]/.test(p),
+      number: (p) => /[0-9]/.test(p),
+      special: (p) => /[^A-Za-z0-9]/.test(p)
+    };
+
+    function updatePasswordRules() {
+      const pw = $('password').value;
+      let score = 0;
+      document.querySelectorAll('#passwordRules li').forEach((li) => {
+        const ok = rules[li.dataset.rule](pw);
+        li.classList.toggle('valid', ok);
+        if (ok) score++;
+      });
+      const bar = $('strengthBar');
+      bar.className = 'strength-bar';
+      if (pw.length) {
+        const level = score <= 1 ? 1 : score === 2 ? 2 : score <= 4 ? 3 : 4;
+        bar.classList.add('s-' + level);
+      }
+      return score === 5;
+    }
+    $('password').addEventListener('input', () => { updatePasswordRules(); clearError('password'); });
+    $('confirm_password').addEventListener('input', () => clearError('confirm_password'));
+
+    function setError(field, msg) {
+      const el = $('err-' + field);
+      if (el) el.textContent = msg;
+      const input = $(field);
+      if (input && input.type !== 'checkbox') input.classList.add('invalid');
+    }
+    function clearError(field) {
+      const el = $('err-' + field);
+      if (el) el.textContent = '';
+      const input = $(field);
+      if (input) input.classList.remove('invalid');
+    }
+    ['national_id', 'full_name', 'ward', 'email', 'phone'].forEach((f) => {
+      $(f).addEventListener('input', () => clearError(f));
+    });
+    wardSel.addEventListener('change', () => clearError('ward'));
+    $('terms').addEventListener('change', () => clearError('terms'));
+
+    function showAlert(msg) {
+      formAlert.textContent = msg;
+      formAlert.classList.remove('hidden');
+      formAlert.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function hideAlert() { formAlert.classList.add('hidden'); }
+
+    function validateStep(step) {
+      let ok = true;
+      if (step === 1) {
+        const id = $('national_id').value.trim();
+        const name = $('full_name').value.trim().replace(/\s+/g, ' ');
+        if (!/^\d{7,8}$/.test(id)) { setError('national_id', 'Enter a valid ID number (7 or 8 digits).'); ok = false; }
+        if (name.length < 3 || name.split(' ').length < 2) { setError('full_name', 'Enter your full name (at least two names).'); ok = false; }
+      }
+      if (step === 2) {
+        if (!constituencySel.value) { setError('constituency', 'Please select your constituency.'); ok = false; }
+        if (!wardSel.value) { setError('ward', 'Please select your ward.'); ok = false; }
+      }
+      if (step === 3) {
+        const email = $('email').value.trim();
+        const phone = $('phone').value.replace(/\s+/g, '');
+        const pw = $('password').value;
+        const cpw = $('confirm_password').value;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('email', 'Enter a valid email address.'); ok = false; }
+        if (!/^(?:\+?254|0)[17]\d{8}$/.test(phone)) { setError('phone', 'Enter a valid Kenyan phone number, e.g. 0712 345 678.'); ok = false; }
+        if (!updatePasswordRules()) { setError('password', 'Your password does not meet all the requirements above.'); ok = false; }
+        if (!cpw) { setError('confirm_password', 'Please confirm your password.'); ok = false; }
+        else if (pw !== cpw) { setError('confirm_password', 'Passwords do not match.'); ok = false; }
+      }
+      if (step === 4) {
+        if (!$('terms').checked) { setError('terms', 'You must accept the Terms & Conditions to continue.'); ok = false; }
+      }
+      return ok;
+    }
+
+    function showStep(n) {
+      currentStep = n;
+      steps.forEach((s) => s.classList.toggle('active', Number(s.dataset.step) === n));
+      dots.forEach((d) => {
+        const num = Number(d.dataset.step);
+        d.classList.toggle('done', num < n);
+        d.classList.toggle('active', num === n);
+        d.querySelector('.dot').textContent = num < n ? '\u2713' : String(num);
+      });
+      $('progressFill').style.width = ((n - 1) / (TOTAL_STEPS - 1) * 75) + '%';
+
+      backBtn.classList.toggle('hidden', n === 1);
+      nextBtn.classList.toggle('hidden', n === TOTAL_STEPS);
+      submitBtn.classList.toggle('hidden', n !== TOTAL_STEPS);
+      if (n === TOTAL_STEPS) buildReview();
+      hideAlert();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function buildReview() {
+      const items = [
+        ['Full name', $('full_name').value.trim().replace(/\s+/g, ' ')],
+        ['National ID', $('national_id').value.trim()],
+        ['Constituency', constituencySel.value],
+        ['Ward', wardSel.value],
+        ['Email', $('email').value.trim()],
+        ['Phone', $('phone').value.trim()]
+      ];
+      const list = $('reviewList');
+      list.innerHTML = '';
+      items.forEach(([label, value]) => {
+        const li = document.createElement('li');
+        const a = document.createElement('span');
+        const b = document.createElement('span');
+        a.textContent = label;
+        b.textContent = value;
+        li.appendChild(a);
+        li.appendChild(b);
+        list.appendChild(li);
+      });
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (validateStep(currentStep)) showStep(currentStep + 1);
+    });
+    backBtn.addEventListener('click', () => showStep(currentStep - 1));
+
+    form.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && currentStep < TOTAL_STEPS) {
+        e.preventDefault();
+        nextBtn.click();
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (currentStep !== TOTAL_STEPS || !validateStep(4)) return;
+
+      hideAlert();
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+
+      const payload = {
+        full_name: $('full_name').value.trim().replace(/\s+/g, ' '),
+        national_id: $('national_id').value.trim(),
+        constituency: constituencySel.value,
+        ward: wardSel.value,
+        email: $('email').value.trim(),
+        phone: $('phone').value.replace(/\s+/g, ''),
+        password: $('password').value,
+        language: localStorage.getItem('lang') || 'en'
+      };
+
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success && data.requireOtp) {
+          form.classList.add('hidden');
+          $('progressSteps').classList.add('hidden');
+          $('authHeader').classList.add('hidden');
+          $('authFooter').classList.add('hidden');
+          
+          $('otpSection').style.display = 'block';
+
+          $('verifyRegisterBtn').onclick = async () => {
+            const otp = $('otpInput').value;
+            if (otp.length !== 6) return alert("Please enter the 6-digit code.");
+
+            $('verifyRegisterBtn').textContent = "Verifying...";
+            $('verifyRegisterBtn').disabled = true;
+
+            const verifyRes = await fetch('/api/verify-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: data.userId, otp: otp })
+            });
+            
+            const verifyData = await verifyRes.json();
+            
+            if (verifyData.success) {
+              localStorage.setItem('role', verifyData.role);
+              localStorage.setItem('name', verifyData.name);
+              localStorage.setItem('constituency', verifyData.constituency || '');
+              localStorage.setItem('ward', verifyData.ward || '');
+              localStorage.setItem('userId', verifyData.userId);
+              localStorage.setItem('token', verifyData.token);
+              
+              window.location.href = 'citizen.html';
+            } else {
+              alert(verifyData.message || "Invalid OTP");
+              $('verifyRegisterBtn').textContent = "Verify & Log In";
+              $('verifyRegisterBtn').disabled = false;
+            }
+          };
+
+          $('backToFormBtn').onclick = () => {
+              $('otpSection').style.display = 'none';
+              form.classList.remove('hidden');
+              $('progressSteps').classList.remove('hidden');
+              $('authHeader').classList.remove('hidden');
+              $('authFooter').classList.remove('hidden');
+              $('otpInput').value = ''; 
+          };
+
+          $('resendOtpBtn').onclick = async () => {
+              $('resendOtpBtn').textContent = "Sending...";
+              $('resendOtpBtn').disabled = true;
+
+              try {
+                  const resendRes = await fetch('/api/resend-otp', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userId: data.userId })
+                  });
+                  const resendData = await resendRes.json();
+
+                  if (resendData.success) {
+                      alert("A new verification code has been sent to your email.");
+                  } else {
+                      alert(resendData.message || "Failed to resend code.");
+                  }
+              } catch (err) {
+                  alert("Could not reach the server.");
+              } finally {
+                  $('resendOtpBtn').textContent = "Resend Code";
+                  $('resendOtpBtn').disabled = false;
+              }
+          };
+
+        } else {
+          showAlert(data.message || 'Registration failed. Please try again.');
+          if (res.status === 409) showStep(1), showAlert(data.message);
+        }
+      } catch (err) {
+        showAlert('Could not reach the server. Check your connection and try again.');
+      } finally {
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+  
+  <script src="shared.js"></script>
+</body>
+</html>

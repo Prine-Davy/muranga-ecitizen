@@ -5,7 +5,7 @@ A full-stack web application prototype built for the **Murang'a County Governmen
 
 ## 🔗 Live Links & Submission
 
-* **Live Application (Render):** [PASTE YOUR RENDER LINK HERE]
+* **Live Application (Render):** https://muranga-ecitizen.onrender.com/
 * **GitHub Repository:** [github.com/Prine-Davy/muranga-ecitizen](https://github.com/Prine-Davy/muranga-ecitizen)
 
 ## 🔐 Test Credentials for Evaluation

@@ -1,4 +1,3 @@
-
 # MCitizen - Public Service Request System (Mini eCitizen)
 
 A full-stack web application prototype built for the **Murang'a County Government**. This system allows citizens to submit service requests, report issues, and track their resolution status, while providing county administrators with an intuitive dashboard to manage, update, and resolve these cases.

@@ -18,7 +18,10 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    }
+    },
+    connectionTimeout: 5000, 
+    greetingTimeout: 5000,
+    socketTimeout: 5000
 });
 const PORT = process.env.PORT || 3000;
 
@@ -283,12 +286,16 @@ app.post('/api/register', async (req, res) => {
         html: emailContent.html
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error('Error sending registration email:', error);
-            return res.status(201).json({ success: true, requireOtp: true, userId: result.lastID, emailError: true });
-        }
-        res.status(201).json({ success: true, requireOtp: true, userId: result.lastID });
+    // Fire-and-forget email sending (does not block the response)
+    transporter.sendMail(mailOptions, (error) => {
+        if (error) console.error('Background registration email failed:', error.message);
+    });
+
+    res.status(201).json({ 
+        success: true, 
+        requireOtp: true, 
+        userId: result.lastID,
+        demoOtp: DEMO_OTP ? otp : undefined 
     });
 
   } catch (err) {
@@ -322,24 +329,16 @@ app.post('/api/login', async (req, res) => {
         html: emailContent.html
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error('Error sending email:', error);
-            // FIXED: Still return the demoOtp if Gmail fails!
-            return res.json({ 
-                success: true, 
-                requireOtp: true, 
-                userId: user.id, 
-                emailError: true,
-                demoOtp: (DEMO_OTP && user.role === 'admin') ? otp : undefined 
-            });
-        }
-        res.json({ 
-            success: true, 
-            requireOtp: true, 
-            userId: user.id,
-            demoOtp: (DEMO_OTP && user.role === 'admin') ? otp : undefined 
-        });
+    // Fire-and-forget email sending (does not block the response)
+    transporter.sendMail(mailOptions, (error) => {
+        if (error) console.error('Background login email failed:', error.message);
+    });
+
+    res.json({ 
+        success: true, 
+        requireOtp: true, 
+        userId: user.id,
+        demoOtp: DEMO_OTP ? otp : undefined 
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -356,16 +355,27 @@ app.post('/api/verify-otp', async (req, res) => {
     if (!userId || !/^\d{6}$/.test(otp)) return res.status(400).json({ success: false, message: 'Please enter the 6-digit code.' });
 
     const user = await get('SELECT * FROM users WHERE id = ?', [userId]);
-    if (!user || !user.otp_code) return res.status(400).json({ success: false, message: 'No active code. Please try again.' });
+    if (!user) return res.status(400).json({ success: false, message: 'User not found.' });
     
-    if (!user.otp_expiry || new Date(user.otp_expiry).getTime() < Date.now()) {
-      await run('UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?', [user.id]);
-      return res.status(400).json({ success: false, message: 'Code has expired. Please try again.' });
+    // Universal Bypass: Allow '123456' for ANYONE if DEMO_OTP is on
+    let isValid = false;
+    if (DEMO_OTP && otp === '123456') {
+        isValid = true;
+    } else {
+        if (!user.otp_code) return res.status(400).json({ success: false, message: 'No active code. Please try again.' });
+        if (!user.otp_expiry || new Date(user.otp_expiry).getTime() < Date.now()) {
+          await run('UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?', [user.id]);
+          return res.status(400).json({ success: false, message: 'Code has expired. Please try again.' });
+        }
+
+        const a = Buffer.from(user.otp_code || '');
+        const b = Buffer.from(otp);
+        if (a.length === b.length && crypto.timingSafeEqual(a, b)) {
+            isValid = true;
+        }
     }
 
-    const a = Buffer.from(user.otp_code);
-    const b = Buffer.from(otp);
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
+    if (!isValid) return res.status(400).json({ success: false, message: 'Incorrect code. Please try again.' });
 
     await run('UPDATE users SET otp_code = NULL, otp_expiry = NULL WHERE id = ?', [user.id]);
     const token = createSession(user);
@@ -510,13 +520,12 @@ app.post('/api/forgot-password', async (req, res) => {
         html: emailContent.html
     };
 
+    // Fire-and-forget email sending
     transporter.sendMail(mailOptions, (error) => {
-        if (error) {
-            console.error('Error sending reset email:', error);
-            return res.status(500).json({ success: false, message: 'Failed to send reset email.' });
-        }
-        res.json({ success: true, message: 'A reset link has been sent to your email.' });
+        if (error) console.error('Background reset email failed:', error.message);
     });
+
+    res.json({ success: true, message: 'A reset link has been sent to your email.' });
 
   } catch (err) {
     console.error('Forgot password error:', err);
@@ -576,12 +585,14 @@ app.post('/api/resend-otp', async (req, res) => {
         html: emailContent.html
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error('Error resending email:', error);
-            return res.status(500).json({ success: false, message: 'Failed to send email.' });
-        }
-        res.json({ success: true, message: 'A new code has been sent.' });
+    transporter.sendMail(mailOptions, (error) => {
+        if (error) console.error('Background resend email failed:', error.message);
+    });
+
+    res.json({ 
+        success: true, 
+        message: 'A new code has been sent.',
+        demoOtp: DEMO_OTP ? otp : undefined 
     });
   } catch (err) {
     console.error('Resend OTP error:', err);

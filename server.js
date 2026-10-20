@@ -92,7 +92,7 @@ async function initDatabase() {
       ward TEXT,
       password TEXT,
       role TEXT DEFAULT 'citizen',
-      language TEXT DEFAULT 'en', /* NEW: Stores user language preference */
+      language TEXT DEFAULT 'en',
       otp_code TEXT,
       otp_expiry DATETIME,
       reset_token TEXT,
@@ -325,7 +325,14 @@ app.post('/api/login', async (req, res) => {
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
             console.error('Error sending email:', error);
-            return res.json({ success: true, requireOtp: true, userId: user.id, emailError: true });
+            // FIXED: Still return the demoOtp if Gmail fails!
+            return res.json({ 
+                success: true, 
+                requireOtp: true, 
+                userId: user.id, 
+                emailError: true,
+                demoOtp: (DEMO_OTP && user.role === 'admin') ? otp : undefined 
+            });
         }
         res.json({ 
             success: true, 

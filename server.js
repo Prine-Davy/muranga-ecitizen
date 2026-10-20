@@ -525,7 +525,12 @@ app.post('/api/forgot-password', async (req, res) => {
         if (error) console.error('Background reset email failed:', error.message);
     });
 
-    res.json({ success: true, message: 'A reset link has been sent to your email.' });
+    // Return the demo link if DEMO_OTP is true
+    res.json({ 
+        success: true, 
+        message: 'A reset link has been sent to your email.',
+        demoResetLink: DEMO_OTP ? resetLink : undefined 
+    });
 
   } catch (err) {
     console.error('Forgot password error:', err);
